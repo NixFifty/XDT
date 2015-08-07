@@ -1,0 +1,9 @@
+<?php
+
+class XFCP_XDT_ControllerAdmin_AddOn extends XenForo_ControllerAdmin_AddOn {}
+class XFCP_XDT_ControllerAdmin_CodeEventListener extends XenForo_ControllerAdmin_CodeEventListener {}
+class XFCP_XDT_ControllerAdmin_Option extends XenForo_ControllerAdmin_Option {}
+class XFCP_XDT_ControllerAdmin_Phrase extends XenForo_ControllerAdmin_Phrase {}
+class XFCP_XDT_ControllerAdmin_Tools extends XenForo_ControllerAdmin_Tools {}
+
+class XFCP_XDT_Model_AddOn extends XenForo_Model_AddOn {}

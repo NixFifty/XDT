@@ -1,0 +1,639 @@
+<?xml version="1.0" encoding="utf-8"?>
+<addon addon_id="XDT" title="Xen Development Tools" version_string="1.5.0" version_id="1050012" url="https://pixelexit.com/" install_callback_class="" install_callback_method="" uninstall_callback_class="" uninstall_callback_method="">
+  <admin_navigation/>
+  <admin_permissions/>
+  <admin_style_properties/>
+  <admin_templates>
+    <template title="templatesyntax.css"><![CDATA[.CodeMirror
+{
+	border: 1px solid {xen:property primaryLighter}; 
+	width: 600px;
+	{xen:property textCtrl}
+	{xen:property textCtrlCode}
+}
+
+.styleProperty .CodeMirror
+{
+	margin-left: 0;
+	width: 100%;
+}
+
+.CodeMirror-gutter
+{
+	cursor: pointer;
+}]]></template>
+    <template title="xdt_addon_build"><![CDATA[<xen:title>{xen:phrase xdt_build_addon}: {$addOn.title}</xen:title>
+
+<xen:topctrl>
+	<a href="{xen:adminlink 'add-ons/builder/purge', $addOn}" class="button OverlayTrigger">{xen:phrase xdt_purge_previous_builds}</a>
+</xen:topctrl>
+
+<xen:form action="{xen:adminlink 'add-ons/builder', $addOn}" class="AutoValidator" data-redirect="true">
+	<xen:textboxunit label="{xen:phrase xdt_addon_build_location}:" name="build_location" value="{$buildLocation}" explain="{xen:phrase xdt_addon_build_location_desc}" />
+	
+	<xen:textboxunit label="{xen:phrase xdt_addon_archive_name}:" name="archive_name" value="{$archiveName}" explain="{xen:phrase xdt_addon_archive_name_desc}" />
+	
+	<xen:checkboxunit label="">
+		<xen:option name="version_increment_check" label="{xen:phrase xdt_increment_addons_version_id_on_successful_build}" value="1">
+			<xen:hint>{xen:phrase xdt_increment_addons_version_id_on_successful_build_desc}</xen:hint>
+			<xen:disabled>
+				<div>{xen:phrase method}:</div>
+				<xen:radio name="increment_method" value="auto" listclass="choiceList indented">
+					<xen:option value="auto">{xen:phrase xdt_increment_by_one}</xen:option>
+					<xen:option value="custom" label="{xen:phrase xdt_increment_to_custom_version}">
+						<xen:spinbox name="increment_custom_version"
+							min="{$addOn.version_id}" step="1"
+							value="{$addOn.version_id}" />
+					</xen:option>
+				</xen:radio>
+			</xen:disabled>
+		</xen:option>
+	</xen:checkboxunit>
+	
+    <fieldset>
+        <xen:controlunit label="{xen:phrase xdt_addon_directories}:">
+            <ul>
+                <li>
+                    <label>
+                        <input type="checkbox" name="library_check" value="1" class="Disabler" id="dir_library" {xen:checked $addOn.libraryDirExists} />
+                        {xen:phrase xdt_library_directory} (/library/...):
+                    </label>
+                    <div class="libraryDirectory" id="dir_library_Disabler">
+                        <xen:textbox name="library_dir" value="{$addOn.addon_id_library}" inputclass="AutoComplete" />
+                    </div>
+                </li>
+                <li>
+                    <label>
+                        <input type="checkbox" name="js_check" value="1" class="Disabler" id="dir_js" {xen:checked $addOn.jsDirExists} />
+                        {xen:phrase xdt_javascript_directory} (/js/...):
+                    </label>
+                    <div class="jsDirectory" id="dir_js_Disabler">
+                        <xen:textbox name="js_dir" value="{$addOn.addon_id_js}" inputclass="AutoComplete" />
+                    </div>
+                </li>
+                <li>
+                    <label>
+                        <input type="checkbox" name="styles_check" value="1" class="Disabler" id="dir_styles" {xen:checked $addOn.styleDirExists} />
+                        {xen:phrase xdt_styles_directory} (/styles/...):
+                    </label>
+                    <div class="stylesDirectory" id="dir_styles_Disabler">
+                        <xen:textbox name="styles_dir" value="{$addOn.addon_id_style}" inputclass="AutoComplete" />
+                    </div>
+                </li>
+				<li>
+					<label>
+						<input type="checkbox" name="extra_check" value="1" class="Disabler" id="dir_extra" />
+                        {xen:phrase xdt_extra_directories_files}:
+					</label>
+					<div class="extrasDirectory" id="dir_extra_Disabler">
+						<xen:textbox name="extra_dirs" rows="4" inputclass="Elastic" explain="{xen:phrase xdt_extra_directories_files_desc}" />
+					</div>
+				</li>
+            </ul>
+        </xen:controlunit>
+    </fieldset>
+	
+    <xen:checkboxunit label="">
+		<xen:option name="zip_check" selected="{$addOn.zip_check}">
+           	{xen:phrase xdt_compress_files_to_zipped_archive}
+       	</xen:option>
+       	<xen:option name="health_check" selected="{$addOn.health_check}">
+           	{xen:phrase xdt_include_health_check_with_build}
+       	</xen:option>
+		<xen:option name="install_xml" selected="{$addOn.install_xml}">
+           	{xen:phrase xdt_include_addon_xml_install_directory_with_build}
+       	</xen:option>
+    </xen:checkboxunit>
+    
+	<xen:submitunit save="{xen:phrase xdt_build_addon}" />
+    <input type="hidden" name="_xfConfirm" value="1" />
+</xen:form>]]></template>
+    <template title="xdt_build_purge"><![CDATA[<xen:title>{xen:phrase xdt_confirm_purge_of_builds}: {$addOn.title}</xen:title>
+<xen:h1>{xen:phrase xdt_confirm_purge_of_builds}</xen:h1>
+
+<xen:require css="public:delete_confirmation.css" />
+
+<xen:form action="{xen:adminlink 'add-ons/builder/purge', '{$addon}'}" class="deleteConfirmForm AutoValidator">
+	<p>{xen:phrase xdt_please_confirm_that_you_want_to_purge_following_addon}:</p>
+	<strong>{$addon.title}</strong>
+	
+	<xen:submitunit save="{xen:phrase xdt_purge_builds}" />
+	<input type="hidden" name="_xfConfirm" value="1" />
+</xen:form>]]></template>
+    <template title="xdt_multiple_phrase_edit"><![CDATA[<xen:title>{xen:if {$phrase.title}, '{xen:phrase edit_phrase}: {$phrase.title}', '{xen:phrase create_new_phrase}'}</xen:title>
+
+<xen:navigation>
+	<xen:breadcrumb href="{xen:adminlink 'languages/phrases', $language}#{xen:helper listitemid, $listItemId}">{$language.title}</xen:breadcrumb>
+</xen:navigation>
+
+<xen:form action="{xen:adminlink 'phrases/save'}" class="AutoValidator" data-redirect="yes">
+	<xen:controlunit label="{xen:phrase language}:">{$language.title}</xen:controlunit>
+
+	<xen:textboxunit name="title" value="{$phrase.title}" label="{xen:phrase title}:" hint="{xen:phrase must_be_unique}" data-livetitletemplate="{xen:if {$phrase.title},
+		'{xen:phrase edit_phrase}: <em>%s</em>',
+		'{xen:phrase create_new_phrase}: <em>%s</em>'}" />
+		
+	<xen:if is="{$masterValue}">
+		<xen:controlunit label="{xen:phrase master_value}:">{xen:string nl2br, $masterValue}</xen:controlunit>
+	</xen:if>
+
+	<xen:textboxunit name="phrase_text" value="{$phrase.phrase_text}" label="{xen:phrase phrase_text}:" rows="2" inputclass="Elastic" />
+
+	<xen:if is="{$showGlobalCacheOption}">
+		<xen:checkboxunit label="">
+			<xen:option name="global_cache" selected="{$phrase.global_cache}">{xen:phrase cache_this_phrase_globally}</xen:option>
+		</xen:checkboxunit>
+	</xen:if>
+	
+	<xen:include template="helper_addon_unit" />
+		
+	<input type="hidden" name="phrase_id" value="{$phrase.phrase_id}" />
+	<input type="hidden" name="language_id" value="{$phrase.language_id}" />
+
+	<xen:submitunit save="{xen:phrase save_phrase}">
+		<input type="submit" name="reload" value="{xen:phrase save_and_reload}" accesskey="e" class="button" id="save_reload_button" />
+		<xen:if is="{$phrase.phrase_id}">
+			<input type="button" value="{xen:if $phrase.language_id, {xen:phrase revert_phrase}, {xen:phrase delete_phrase}}..."
+				accesskey="d" class="button OverlayTrigger"
+				data-href="{xen:adminlink 'phrases/delete', $phrase, 'language_id={$language.language_id}'}" />
+		</xen:if>
+	</xen:submitunit>
+</xen:form>]]></template>
+    <template title="xdt_option_list"><![CDATA[<xen:title>{xen:phrase options}: {$group.title}</xen:title>
+<xen:h1>{$group.title}</xen:h1>
+
+<xen:container var="$head.optionCss">
+	<style>
+		.hiddenOption   { display: inline-block; font-size: 9px; margin-right: 3px; color: {xen:property mutedTextColor}; }
+		.hiddenOption a { position: static; }
+		.optionList a.optionAnchor { position: absolute; top: -80px; } /* prevents anchors pointing going under the fixed header */
+	</style>
+</xen:container>
+
+<xen:if is="{$canEditGroup}">
+	<xen:topctrl>
+		<a href="{xen:adminlink 'options/add-option', '', "group_id={$group.group_id}"}" class="button">+ {xen:phrase add_option}</a>
+		<a class="button" href="{xen:adminlink 'options/display-order', $group}">{xen:phrase display_order}</a>
+		<a class="button" href="{xen:adminlink 'options/edit-group', $group}">{xen:phrase edit_group}</a>
+	</xen:topctrl>
+</xen:if>
+
+<xen:form action="{xen:adminlink 'options/xdt-save', $group}" upload="true">
+
+	<div class="topChoosers">
+		<div class="Popup">
+			<span class="muted">{xen:phrase option_groups}:</span> <a rel="Menu">{$group.title}</a>
+			<div class="Menu">
+				<div class="primaryContent menuHeader"><h3>{xen:phrase option_groups}</h3></div>
+				<ul class="secondaryContent blockLinksList">
+					<xen:foreach loop="$groups" value="$_group">
+						<li><a href="{xen:adminlink 'options/list', $_group}">{$_group.title}</a></li>
+					</xen:foreach>
+				</ul>
+			</div>
+		</div>
+	</div>
+
+	<xen:if hascontent="true"><div class="optionGroupDescription muted"><i><xen:contentcheck>{xen:raw $group.description}</xen:contentcheck></i></div></xen:if>
+
+	<ul class="tabs mainTabs Tabs" data-panes="#OptionPanes > li" data-history="on">
+		<li><a href="{$requestPaths.requestUri}#generalOptions">{xen:phrase xdt_general_options}</a></li>
+		<li><a href="{$requestPaths.requestUri}#builderOptions">{xen:phrase xdt_builder_options}</a></li>
+		<li><a href="{$requestPaths.requestUri}#editorOptions">{xen:phrase xdt_editor_options}</a></li>
+		<li><a href="{$requestPaths.requestUri}#cliOptions">{xen:phrase xdt_cli_options}</a></li>
+		<li><a href="{$requestPaths.requestUri}#generatorOptions">{xen:phrase xdt_generator_options}</a></li>
+		<li><a href="{$requestPaths.requestUri}#loggingOptions">{xen:phrase xdt_logging_options}</a></li>
+		<li><a href="{$requestPaths.requestUri}#addonOptions">{xen:phrase xdt_addon_options}</a></li>
+	</ul>
+
+	<ul id="OptionPanes">
+		<li id="generalOptions">
+			<xen:foreach loop="$renderedOptions" key="{$displayId}" value="$_group">
+				<xen:if is="{$displayId} == 1">
+					<xen:if hascontent="true">
+						<fieldset class="optionList">
+							<xen:contentcheck>
+								<xen:foreach loop="$_group" key="$optionId" value="$renderedOption">
+									{xen:raw $renderedOption}
+								</xen:foreach>
+							</xen:contentcheck>
+						</fieldset>
+					</xen:if>
+				</xen:if>
+			</xen:foreach>
+		</li>
+		
+		<li id="builderOptions">
+			<xen:foreach loop="$renderedOptions" key="{$displayId}" value="$_group">
+				<xen:if is="{$displayId} == 2">
+					<xen:if hascontent="true">
+						<fieldset class="optionList">
+							<xen:contentcheck>
+								<xen:foreach loop="$_group" key="$optionId" value="$renderedOption">
+									{xen:raw $renderedOption}
+								</xen:foreach>
+							</xen:contentcheck>
+						</fieldset>
+					</xen:if>
+				</xen:if>
+			</xen:foreach>
+		</li>
+		
+		<li id="editorOptions">
+			<xen:foreach loop="$renderedOptions" key="{$displayId}" value="$_group">
+				<xen:if is="{$displayId} == 3">
+					<xen:if hascontent="true">
+						<fieldset class="optionList">
+							<xen:contentcheck>
+								<xen:foreach loop="$_group" key="$optionId" value="$renderedOption">
+									{xen:raw $renderedOption}
+								</xen:foreach>
+							</xen:contentcheck>
+						</fieldset>
+					</xen:if>
+				</xen:if>
+			</xen:foreach>
+		</li>
+		
+		<li id="cliOptions">
+			<xen:foreach loop="$renderedOptions" key="{$displayId}" value="$_group">
+				<xen:if is="{$displayId} == 4">
+					<xen:if hascontent="true">
+						<fieldset class="optionList">
+							<xen:contentcheck>
+								<xen:foreach loop="$_group" key="$optionId" value="$renderedOption">
+									{xen:raw $renderedOption}
+								</xen:foreach>
+							</xen:contentcheck>
+						</fieldset>
+					</xen:if>
+				</xen:if>
+			</xen:foreach>
+		</li>
+		
+		<li id="generatorOptions">
+			<xen:foreach loop="$renderedOptions" key="{$displayId}" value="$_group">
+				<xen:if is="{$displayId} == 5">
+					<xen:if hascontent="true">
+						<fieldset class="optionList">
+							<xen:contentcheck>
+								<xen:foreach loop="$_group" key="$optionId" value="$renderedOption">
+									{xen:raw $renderedOption}
+								</xen:foreach>
+							</xen:contentcheck>
+						</fieldset>
+					</xen:if>
+				</xen:if>
+			</xen:foreach>
+		</li>
+		
+		<li id="loggingOptions">
+			<xen:foreach loop="$renderedOptions" key="{$displayId}" value="$_group">
+				<xen:if is="{$displayId} == 6">
+					<xen:if hascontent="true">
+						<fieldset class="optionList">
+							<xen:contentcheck>
+								<xen:foreach loop="$_group" key="$optionId" value="$renderedOption">
+									{xen:raw $renderedOption}
+								</xen:foreach>
+							</xen:contentcheck>
+						</fieldset>
+					</xen:if>
+				</xen:if>
+			</xen:foreach>
+		</li>
+		
+		<li id="addonOptions">
+			<xen:foreach loop="$renderedOptions" key="{$displayId}" value="$_group">
+				<xen:if is="{$displayId} == 7">
+					<xen:if hascontent="true">
+						<fieldset class="optionList">
+							<xen:contentcheck>
+								<xen:foreach loop="$_group" key="$optionId" value="$renderedOption">
+									{xen:raw $renderedOption}
+								</xen:foreach>
+							</xen:contentcheck>
+						</fieldset>
+					</xen:if>
+				</xen:if>
+			</xen:foreach>
+		</li>
+	</ul>
+
+	<xen:submitunit save="{xen:phrase save_changes}">
+		<input type="reset" class="button" value="{xen:phrase cancel}" accesskey="r" />
+	</xen:submitunit>
+</xen:form>]]></template>
+    <template title="xdt_option_template_default_version"><![CDATA[<xen:checkboxunit hint="{$preparedOption.hint}">
+	<xen:label></xen:label>
+	<xen:option name="{$fieldPrefix}[{$preparedOption.option_id}][check]" selected="{$preparedOption.option_value.check}" label="{$preparedOption.title}" hint="{$preparedOption.explain}">
+		<xen:disabled>
+			<div>{xen:phrase type}:</div>
+			<xen:radio name="{$fieldPrefix}[{$preparedOption.option_id}][action]" value="{xen:if $preparedOption.option_value.action, $preparedOption.option_value.action, 'moderate'}" listclass="choiceList indented">
+				<xen:option value="timestamp">{xen:phrase xdt_current_timestamp}</xen:option>
+				<xen:option value="core">{xen:phrase xdt_xenforo_core}</xen:option>
+				<xen:option value="custom" label="{xen:phrase xdt_custom}">
+					<xen:textbox name="{$fieldPrefix}[{$preparedOption.option_id}][projectHoneyPotKey]" value="{$preparedOption.option_value.projectHoneyPotKey}" inputclass="indented" />
+				</xen:option>
+				<p class="hint">{xen:phrase if_entered_project_honey_pot_http_blacklist_checked}</p>
+			</xen:radio>
+		</xen:disabled>
+		
+	</xen:option>
+	<xen:html>
+		<input type="hidden" name="{$listedFieldName}" value="{$preparedOption.option_id}" />
+		{xen:raw $editLink}
+	</xen:html>
+</xen:checkboxunit>]]></template>
+  </admin_templates>
+  <admin_template_modifications>
+    <modification template="addon_list" modification_key="xdt_addon_list_build" description="Adds a 'Build' option on add-on controls." execution_order="10" enabled="1" action="str_replace">
+      <find><![CDATA[<xen:link href="{xen:adminlink 'add-ons/export', $addOn}" displayif="{$canAccessDevelopment}">{xen:phrase export}</xen:link>]]></find>
+      <replace><![CDATA[$0
+<xen:link href="{xen:adminlink 'add-ons/build', $addOn}" displayif="{$canAccessDevelopment}" class="OverlayTrigger">{xen:phrase xdt_build}</xen:link>]]></replace>
+    </modification>
+    <modification template="code_event_listener_list" modification_key="xdt_code_event_listener_list_priority" description="Adds event listener priority in filter list." execution_order="10" enabled="1" action="preg_replace">
+      <find><![CDATA[#(snippet="{\$listener\.description})(.*")#Us]]></find>
+      <replace><![CDATA[${1} [{$listener.execute_order}]${2}]]></replace>
+    </modification>
+    <modification template="sidebar_installed_addons" modification_key="xdt_sidebar_installed_addons_create" description="Adds a link to create an add-on on the ACP homepage." execution_order="10" enabled="1" action="str_replace">
+      <find><![CDATA[<a href="{xen:adminlink add-ons/install}">{xen:phrase install_add_on}</a>
+		&nbsp;]]></find>
+      <replace><![CDATA[<a href="{xen:adminlink add-ons/add}" class="OverlayTrigger">{xen:phrase create_add_on}</a>
+		&nbsp;
+$0]]></replace>
+    </modification>
+  </admin_template_modifications>
+  <code_events/>
+  <code_event_listeners>
+    <listener event_id="controller_pre_dispatch" execute_order="10" callback_class="XDT_Listener" callback_method="controller_pre_dispatch" active="1" hint="" description=""/>
+    <listener event_id="front_controller_pre_view" execute_order="10" callback_class="XDT_Listener" callback_method="front_controller_pre_view" active="1" hint="" description=""/>
+    <listener event_id="load_class_controller" execute_order="10" callback_class="XDT_Listener" callback_method="loadAddOnController" active="1" hint="XenForo_ControllerAdmin_AddOn" description="Listens for the XenForo_ControllerAdmin_AddOn class."/>
+    <listener event_id="load_class_controller" execute_order="10" callback_class="XDT_Listener" callback_method="loadToolsController" active="0" hint="XenForo_ControllerAdmin_Tools" description="Listens for the XenForo_ControllerAdmin_Tools class."/>
+    <listener event_id="load_class_controller" execute_order="10" callback_class="XDT_Listener" callback_method="loadOptionController" active="1" hint="XenForo_ControllerAdmin_Option" description="Listens for the XenForo_ControllerAdmin_Option class."/>
+    <listener event_id="load_class_controller" execute_order="10" callback_class="XDT_Listener" callback_method="loadCodeEventListenerController" active="0" hint="XenForo_ControllerAdmin_CodeEventListener" description="Listens for the XenForo_ControllerAdmin_CodeEventListener class."/>
+    <listener event_id="load_class_controller" execute_order="10" callback_class="XDT_Listener" callback_method="loadPhraseController" active="0" hint="XenForo_ControllerAdmin_Phrase" description="Listens for the XenForo_ControllerAdmin_Phrase class."/>
+    <listener event_id="load_class_model" execute_order="10" callback_class="XDT_Listener" callback_method="loadAddOnModel" active="1" hint="XenForo_Model_AddOn" description="Listens for the XenForo_Model_AddOn class."/>
+    <listener event_id="template_post_render" execute_order="10" callback_class="XDT_Listener" callback_method="template_post_render" active="1" hint="PAGE_CONTAINER" description=""/>
+  </code_event_listeners>
+  <cron/>
+  <email_templates/>
+  <email_template_modifications/>
+  <optiongroups>
+    <group group_id="xdt" display_order="1300" debug_only="0"/>
+    <option option_id="xdtCmFeatures" edit_format="checkbox" data_type="array" can_backup="1">
+      <default_value>a:8:{s:11:"lineNumbers";s:1:"1";s:14:"indentWithTabs";s:1:"1";s:11:"smartIndent";s:1:"1";s:13:"electricChars";s:1:"1";s:13:"matchBrackets";s:1:"1";s:9:"closeTags";s:1:"1";s:8:"foldCode";s:1:"1";s:19:"autoClearEmptyLines";s:1:"1";}</default_value>
+      <edit_format_params>autoMaximize = Auto Maximize
+lineNumbers = Show Line Numbers
+lineWrapping = Wrap Lines
+indentWithTabs = Indent with Tabs
+smartIndent=Context-Sensitive (smart) Indentation
+electricChars=Auto Re-Indent (electric chars)
+matchBrackets = Match Brackets
+closeTags = Auto Close Tags
+foldCode = Foldable Tags
+autoClearEmptyLines=Automatically Clear Empty Lines</edit_format_params>
+      <sub_options>*</sub_options>
+      <relation group_id="xdt" display_order="310"/>
+    </option>
+    <option option_id="xdtCmFormatKeyBinding" edit_format="select" data_type="string" can_backup="1">
+      <default_value>Shift-Ctrl-C</default_value>
+      <edit_format_params>Shift-Cmd-C = Shift-Cmd-C
+Shift-Ctrl-C = Shift-Ctrl-C
+F1 = F1
+F2 = F2
+F3 = F3
+F4 = F4
+F5 = F5
+F6 = F6
+F7 = F7
+F8 = F8
+F9 = F9
+F10 = F10
+F11 = F11
+F12 = F12</edit_format_params>
+      <sub_options></sub_options>
+      <relation group_id="xdt" display_order="330"/>
+    </option>
+    <option option_id="xdtCmKeyMap" edit_format="radio" data_type="string" can_backup="1">
+      <default_value>default</default_value>
+      <edit_format_params>default = Default
+emacs = Emacs
+vim = Vim</edit_format_params>
+      <sub_options></sub_options>
+      <relation group_id="xdt" display_order="320"/>
+    </option>
+    <option option_id="xdtCmMaximizeKeybinding" edit_format="select" data_type="string" can_backup="1">
+      <default_value>Shift-Ctrl-M</default_value>
+      <edit_format_params>Shift-Ctrl-M = Shift-Ctrl-M
+Shift-Cmd-M = Shift-Cmd-M
+F1 = F1
+F2 = F2
+F3 = F3
+F4 = F4
+F5 = F5
+F6 = F6
+F7 = F7
+F8 = F8
+F9 = F9
+F10 = F10
+F11 = F11
+F12 = F12</edit_format_params>
+      <sub_options></sub_options>
+      <relation group_id="xdt" display_order="331"/>
+    </option>
+    <option option_id="xdtCmSaveKeybinding" edit_format="select" data_type="string" can_backup="1">
+      <default_value>Ctrl-S</default_value>
+      <edit_format_params>Ctrl-S = Ctrl-S
+Cmd-S = Cmd-S
+Shift-Ctrl-S = Shift-Ctrl-S
+Shift-Cmd-S = Shift-Cmd-S
+F1 = F1
+F2 = F2
+F3 = F3
+F4 = F4
+F5 = F5
+F6 = F6
+F7 = F7
+F8 = F8
+F9 = F9
+F10 = F10
+F11 = F11
+F12 = F12</edit_format_params>
+      <sub_options></sub_options>
+      <relation group_id="xdt" display_order="332"/>
+    </option>
+    <option option_id="xdtCmTabSize" edit_format="spinbox" data_type="unsigned_integer" can_backup="1">
+      <default_value>4</default_value>
+      <edit_format_params>min=2
+max=8</edit_format_params>
+      <sub_options></sub_options>
+      <relation group_id="xdt" display_order="340"/>
+    </option>
+    <option option_id="xdtCmTheme" edit_format="select" data_type="string" can_backup="1">
+      <default_value>default</default_value>
+      <edit_format_params>ambiance=Ambiance
+blackboard=Blackboard
+cobalt=Cobalt
+default=Default
+eclipse=Eclipse
+elegant=Elegant
+erlang-dark=Erlang Dark
+lesser-dark=Lesser Dark
+monokai=Monokai
+neat=Neat
+night=Night
+rubyblue=Rubyblue
+xq-dark=XQ Dark</edit_format_params>
+      <sub_options></sub_options>
+      <relation group_id="xdt" display_order="350"/>
+    </option>
+    <option option_id="xdtCmZenKeyBinding" edit_format="select" data_type="string" can_backup="1">
+      <default_value>Shift-Ctrl-Z</default_value>
+      <edit_format_params>Shift-Cmd-Z = Shift-Cmd-Z
+Shift-Ctrl-Z = Shift-Ctrl-Z
+F1 = F1
+F2 = F2
+F3 = F3
+F4 = F4
+F5 = F5
+F6 = F6
+F7 = F7
+F8 = F8
+F9 = F9
+F10 = F10
+F11 = F11
+F12 = F12</edit_format_params>
+      <sub_options></sub_options>
+      <relation group_id="xdt" display_order="333"/>
+    </option>
+    <option option_id="xdtDefaultBuildLocation" edit_format="textbox" data_type="string" can_backup="1">
+      <default_value>addon-prestage/</default_value>
+      <edit_format_params></edit_format_params>
+      <sub_options></sub_options>
+      <relation group_id="xdt" display_order="210"/>
+    </option>
+    <option option_id="xdtDefaultEventListenerDesc" edit_format="textbox" data_type="string" can_backup="1">
+      <default_value></default_value>
+      <edit_format_params></edit_format_params>
+      <sub_options></sub_options>
+      <relation group_id="xdt" display_order="510"/>
+    </option>
+    <option option_id="xdtDefaultVersion" edit_format="template" data_type="array" can_backup="1">
+      <default_value></default_value>
+      <edit_format_params>xdt_option_template_default_version</edit_format_params>
+      <sub_options>check
+action
+projectHoneyPotKey</sub_options>
+      <relation group_id="xdt" display_order="730"/>
+    </option>
+    <option option_id="xdtIgnoreFiles" edit_format="textbox" data_type="string" can_backup="1">
+      <default_value>.DS_Store
+.localized
+Thumbs.db</default_value>
+      <edit_format_params>rows=4</edit_format_params>
+      <sub_options></sub_options>
+      <relation group_id="xdt" display_order="220"/>
+    </option>
+    <option option_id="xdtIncrementOnBuild" edit_format="onoff" data_type="boolean" can_backup="1">
+      <default_value>1</default_value>
+      <edit_format_params></edit_format_params>
+      <sub_options></sub_options>
+      <relation group_id="xdt" display_order="200"/>
+    </option>
+    <option option_id="xdtLogException" edit_format="onoff" data_type="boolean" can_backup="1">
+      <default_value>1</default_value>
+      <edit_format_params></edit_format_params>
+      <sub_options></sub_options>
+      <relation group_id="xdt" display_order="610"/>
+    </option>
+  </optiongroups>
+  <permissions>
+    <permission_groups/>
+    <permissions/>
+    <interface_groups/>
+  </permissions>
+  <phrases>
+    <phrase title="option_group_xdt" version_id="1040010" version_string="1.4.0"><![CDATA[Xen Development Tools]]></phrase>
+    <phrase title="option_group_xdt_description" version_id="130" version_string="1.3.0"><![CDATA[]]></phrase>
+    <phrase title="option_xdtCmFeatures" version_id="130" version_string="1.3.0"><![CDATA[CodeMirror Features]]></phrase>
+    <phrase title="option_xdtCmFeatures_explain" version_id="130" version_string="1.3.0"><![CDATA[]]></phrase>
+    <phrase title="option_xdtCmFormatKeyBinding" version_id="130" version_string="1.3.0"><![CDATA[CodeMirror Format Key Binding]]></phrase>
+    <phrase title="option_xdtCmFormatKeyBinding_explain" version_id="130" version_string="1.3.0"><![CDATA[]]></phrase>
+    <phrase title="option_xdtCmKeyMap" version_id="130" version_string="1.3.0"><![CDATA[CodeMirror Keymap]]></phrase>
+    <phrase title="option_xdtCmKeyMap_explain" version_id="130" version_string="1.3.0"><![CDATA[]]></phrase>
+    <phrase title="option_xdtCmMaximizeKeybinding" version_id="130" version_string="1.3.0"><![CDATA[CodeMirror Maximize Key Binding]]></phrase>
+    <phrase title="option_xdtCmMaximizeKeybinding_explain" version_id="130" version_string="1.3.0"><![CDATA[]]></phrase>
+    <phrase title="option_xdtCmSaveKeybinding" version_id="130" version_string="1.3.0"><![CDATA[CodeMirror Save Key Binding]]></phrase>
+    <phrase title="option_xdtCmSaveKeybinding_explain" version_id="130" version_string="1.3.0"><![CDATA[]]></phrase>
+    <phrase title="option_xdtCmTabSize" version_id="130" version_string="1.3.0"><![CDATA[CodeMirror Tab Size]]></phrase>
+    <phrase title="option_xdtCmTabSize_explain" version_id="130" version_string="1.3.0"><![CDATA[]]></phrase>
+    <phrase title="option_xdtCmTheme" version_id="130" version_string="1.3.0"><![CDATA[CodeMirror Theme]]></phrase>
+    <phrase title="option_xdtCmTheme_explain" version_id="130" version_string="1.3.0"><![CDATA[]]></phrase>
+    <phrase title="option_xdtCmZenKeyBinding" version_id="130" version_string="1.3.0"><![CDATA[CodeMirror Zen Key Binding]]></phrase>
+    <phrase title="option_xdtCmZenKeyBinding_explain" version_id="130" version_string="1.3.0"><![CDATA[]]></phrase>
+    <phrase title="option_xdtDefaultBuildLocation" version_id="130" version_string="1.3.0"><![CDATA[Default Build Location]]></phrase>
+    <phrase title="option_xdtDefaultBuildLocation_explain" version_id="1040010" version_string="1.4.0"><![CDATA[By default, add-ons will be built to this directory but a different directory can be specified when it's time to build. Directory should include a trailing slash.]]></phrase>
+    <phrase title="option_xdtDefaultEventListenerDesc" version_id="1040010" version_string="1.4.0"><![CDATA[Default Event Listener Description]]></phrase>
+    <phrase title="option_xdtDefaultEventListenerDesc_explain" version_id="1040010" version_string="1.4.0"><![CDATA[Based on the type of Code Event selected and the hint specified, XDT will automatically generate an appropriate description for you. In the case that no description could be generated, this text will be used.]]></phrase>
+    <phrase title="option_xdtDefaultVersion" version_id="1040010" version_string="1.4.0"><![CDATA[Automatically populate Version ID on add-on creation]]></phrase>
+    <phrase title="option_xdtDefaultVersion_explain" version_id="1040010" version_string="1.4.0"><![CDATA[XDT allows for the 'Version ID' field to be automatically populated on creation of a new add-on thus saving some precious seconds of your life.]]></phrase>
+    <phrase title="option_xdtIgnoreFiles" version_id="1040010" version_string="1.4.0"><![CDATA[Files to Ignore]]></phrase>
+    <phrase title="option_xdtIgnoreFiles_explain" version_id="1040010" version_string="1.4.0"><![CDATA[These files will be excluded from the build process and will not be packaged with the add-on. Separate file names with a new line.]]></phrase>
+    <phrase title="option_xdtIncrementOnBuild" version_id="1040010" version_string="1.4.0"><![CDATA[Increment Version ID after successful build]]></phrase>
+    <phrase title="option_xdtIncrementOnBuild_explain" version_id="1040010" version_string="1.4.0"><![CDATA[If enabled, after each successful build and export of an addon, it's 'Version ID' will be incremented to ease later development.]]></phrase>
+    <phrase title="option_xdtLogException" version_id="131" version_string="1.3.0"><![CDATA[Log Exceptions]]></phrase>
+    <phrase title="option_xdtLogException_explain" version_id="131" version_string="1.3.0"><![CDATA[]]></phrase>
+    <phrase title="xdt_addon_archive_name" version_id="130" version_string="1.3.0"><![CDATA[Add-on Archive Name]]></phrase>
+    <phrase title="xdt_addon_archive_name_desc" version_id="130" version_string="1.3.0"><![CDATA[Specify the name that should be given to the compressed add-on archive.]]></phrase>
+    <phrase title="xdt_addon_build_location" version_id="130" version_string="1.3.0"><![CDATA[Add-on Build Location]]></phrase>
+    <phrase title="xdt_addon_build_location_desc" version_id="130" version_string="1.3.0"><![CDATA[Specify the build path (relative to your XenForo root). Please include the trailing slash.]]></phrase>
+    <phrase title="xdt_addon_directories" version_id="130" version_string="1.3.0"><![CDATA[Add-on Directories]]></phrase>
+    <phrase title="xdt_addon_options" version_id="1040010" version_string="1.4.0"><![CDATA[Add-on Options]]></phrase>
+    <phrase title="xdt_admin_and_public" version_id="130" version_string="1.3.0"><![CDATA[Both Admin Control Panel and Public]]></phrase>
+    <phrase title="xdt_admin_only" version_id="130" version_string="1.3.0"><![CDATA[Admin Control Panel only]]></phrase>
+    <phrase title="xdt_build" version_id="130" version_string="1.3.0"><![CDATA[Build]]></phrase>
+    <phrase title="xdt_builder_options" version_id="130" version_string="1.3.0"><![CDATA[Builder Options]]></phrase>
+    <phrase title="xdt_build_addon" version_id="130" version_string="1.3.0"><![CDATA[Build Add-on]]></phrase>
+    <phrase title="xdt_cli_options" version_id="130" version_string="1.3.0"><![CDATA[CLI Options]]></phrase>
+    <phrase title="xdt_compress_files_to_zipped_archive" version_id="130" version_string="1.3.0"><![CDATA[Compress files to zipped archive]]></phrase>
+    <phrase title="xdt_config_value" version_id="130" version_string="1.3.0"><![CDATA[Use config.php value]]></phrase>
+    <phrase title="xdt_confirm_purge_of_builds" version_id="131" version_string="1.3.0"><![CDATA[Confirm Purge of Previous Builds]]></phrase>
+    <phrase title="xdt_create_multiple_phrases" version_id="1040010" version_string="1.4.0"><![CDATA[Create Multiple Phrases]]></phrase>
+    <phrase title="xdt_current_timestamp" version_id="1040010" version_string="1.4.0"><![CDATA[Current Timestamp]]></phrase>
+    <phrase title="xdt_custom" version_id="1040010" version_string="1.4.0"><![CDATA[Custom]]></phrase>
+    <phrase title="xdt_default_addon" version_id="130" version_string="1.3.0"><![CDATA[Default Add-on]]></phrase>
+    <phrase title="xdt_editor_options" version_id="130" version_string="1.3.0"><![CDATA[Editor Options]]></phrase>
+    <phrase title="xdt_extra_directories_files" version_id="130" version_string="1.3.0"><![CDATA[Extra Directories / Files]]></phrase>
+    <phrase title="xdt_extra_directories_files_desc" version_id="130" version_string="1.3.0"><![CDATA[Specify the paths (relative to your XenForo root) to any extra directories or files that should be included in the build. Separate each new path on a new line. Directory and file hierarchies will be maintained.]]></phrase>
+    <phrase title="xdt_general_options" version_id="130" version_string="1.3.0"><![CDATA[General Options]]></phrase>
+    <phrase title="xdt_generator_options" version_id="130" version_string="1.3.0"><![CDATA[Generator Options]]></phrase>
+    <phrase title="xdt_include_addon_xml_install_directory_with_build" version_id="130" version_string="1.3.0"><![CDATA[Include add-on XML in "install/data/" directory with this build]]></phrase>
+    <phrase title="xdt_include_health_check_with_build" version_id="130" version_string="1.3.0"><![CDATA[Include <a href="admin.php?tools/file-check">file health check</a> support with this build]]></phrase>
+    <phrase title="xdt_increment_addons_version_id_on_successful_build" version_id="130" version_string="1.3.0"><![CDATA[Increment add-on's Version ID on successful build]]></phrase>
+    <phrase title="xdt_increment_addons_version_id_on_successful_build_desc" version_id="130" version_string="1.3.0"><![CDATA[If enabled, after each successful build of an add-on, it's Version ID will be incremented to ease later development.]]></phrase>
+    <phrase title="xdt_increment_by_one" version_id="130" version_string="1.3.0"><![CDATA[Increment by one]]></phrase>
+    <phrase title="xdt_increment_to_custom_version" version_id="130" version_string="1.3.0"><![CDATA[Increment to custom version]]></phrase>
+    <phrase title="xdt_javascript_directory" version_id="130" version_string="1.3.0"><![CDATA[JavaScript directory]]></phrase>
+    <phrase title="xdt_library_directory" version_id="130" version_string="1.3.0"><![CDATA[Library directory]]></phrase>
+    <phrase title="xdt_logging_options" version_id="131" version_string="1.3.0"><![CDATA[Logging Options]]></phrase>
+    <phrase title="xdt_please_confirm_that_you_want_to_purge_following_addon" version_id="131" version_string="1.3.0"><![CDATA[Please confirm that you want to purge the following add-on's associated builds]]></phrase>
+    <phrase title="xdt_previous_builds_have_been_purged" version_id="130" version_string="1.3.0"><![CDATA[Previous builds of this add-on have been purged.]]></phrase>
+    <phrase title="xdt_public_only" version_id="130" version_string="1.3.0"><![CDATA[Public only]]></phrase>
+    <phrase title="xdt_purge_builds" version_id="130" version_string="1.3.0"><![CDATA[Purge Builds]]></phrase>
+    <phrase title="xdt_purge_previous_builds" version_id="130" version_string="1.3.0"><![CDATA[Purge Previous Builds]]></phrase>
+    <phrase title="xdt_styles_directory" version_id="130" version_string="1.3.0"><![CDATA[Styles Directory]]></phrase>
+    <phrase title="xdt_xenforo_core" version_id="1040010" version_string="1.4.0"><![CDATA[XenForo Core]]></phrase>
+    <phrase title="xdt_your_addon_has_been_built_successfully" version_id="130" version_string="1.3.0"><![CDATA[Your add-on has been built successfully.]]></phrase>
+  </phrases>
+  <route_prefixes>
+    <route_type type="admin">
+      <prefix original_prefix="xdt" class="XDT_Route_PrefixAdmin_XDT" build_link="data_only"/>
+    </route_type>
+  </route_prefixes>
+  <style_properties/>
+  <templates/>
+  <public_template_modifications/>
+  <bb_code_media_sites/>
+  <bb_codes/>
+</addon>
